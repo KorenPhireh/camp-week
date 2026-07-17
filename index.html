@@ -58,6 +58,14 @@
   header.top h1 span{color:var(--accent);}
   header.top .sub{color:var(--ink-soft);font-size:13px;letter-spacing:.04em;}
 
+  .now-strip{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--card);
+    border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:6px;
+    padding:10px 14px;margin-bottom:14px;box-shadow:var(--shadow);}
+  .now-strip[hidden]{display:none;}
+  .now-strip .tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+    font-family:Bahnschrift,"Arial Narrow",sans-serif;}
+  .now-strip .what{font-weight:600;font-size:15px;}
+  .now-strip .nxt{color:var(--ink-soft);font-size:13px;font-variant-numeric:tabular-nums;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px;}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:6px;
     padding:10px 14px;box-shadow:var(--shadow);}
@@ -122,10 +130,13 @@
   .day.today h3{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
   .day h3 small{font-weight:400;letter-spacing:0;text-transform:none;opacity:.8;}
   .blocks{padding:8px;display:flex;flex-direction:column;gap:5px;min-height:60px;}
-  .blk{border-radius:4px;padding:5px 9px;display:flex;gap:8px;align-items:baseline;
+  .blk{border-radius:4px;padding:6px 10px;display:flex;gap:9px;align-items:baseline;
     border-left:4px solid var(--bc,var(--c-rest));background:var(--bb,var(--c-rest-bg));font-size:13.5px;}
   .blk .t{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:12px;white-space:nowrap;}
-  .blk .n{font-weight:600;}
+  .blk .n{font-weight:600;flex:1;min-width:0;}
+  .blk .dur{font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .blk.live{outline:2px solid var(--accent);outline-offset:1px;}
+  .blk.past{opacity:.5;}
   .blk.work{--bc:var(--c-work);--bb:var(--c-work-bg);}
   .blk.mt{--bc:var(--c-mt);--bb:var(--c-mt-bg);}
   .blk.str{--bc:var(--c-str);--bb:var(--c-str-bg);}
@@ -144,6 +155,11 @@
     <h1 class="display">Camp<span>Week</span></h1>
     <div class="sub display">Train &middot; Work &middot; Study &middot; No Media</div>
   </header>
+
+  <div class="now-strip" id="nowStrip" hidden>
+    <div><span class="tag">Now</span><div class="what" id="nowWhat"></div></div>
+    <div class="nxt" id="nowNext"></div>
+  </div>
 
   <div class="stats">
     <div class="stat"><div class="label">Study planned</div>
@@ -331,20 +347,30 @@
       var mins=0;
       res.plan[d].forEach(function(b){ if(b.cls==="stu") mins+=b.b-b.a;
         if(b.cls==="mt"||b.cls==="str"||b.cls==="car") train++; });
+      var date=new Date(); date.setDate(date.getDate()-jsDay+d);
       var h=document.createElement("h3"); h.className="display";
-      h.innerHTML=DAYS[d]+(d===jsDay?" <small>today</small>":"");
+      h.innerHTML=DAYS[d]+" <small>"+(d===jsDay?"today · ":"")+
+        date.toLocaleDateString(undefined,{day:"numeric",month:"short"})+"</small>";
       card.appendChild(h);
       var box=document.createElement("div"); box.className="blocks";
       if(res.plan[d].length===0){
         box.innerHTML='<div class="empty-day">Free day — recover well.</div>';
       }
+      var nowMin=new Date().getHours()*60+new Date().getMinutes();
       res.plan[d].forEach(function(b){
         var el=document.createElement("div"); el.className="blk "+b.cls;
+        if(d===jsDay){
+          if(nowMin>=b.a&&nowMin<b.b) el.className+=" live";
+          else if(nowMin>=b.b) el.className+=" past";
+        }
         var t=document.createElement("span"); t.className="t"; t.textContent=toT(b.a)+"–"+toT(b.b);
         var n=document.createElement("span"); n.className="n"; n.textContent=b.name;
-        el.appendChild(t); el.appendChild(n); box.appendChild(el);
+        var du=document.createElement("span"); du.className="dur";
+        var len=b.b-b.a; du.textContent=(len>=60?Math.floor(len/60)+"h":"")+(len%60?(len%60)+"m":"");
+        el.appendChild(t); el.appendChild(n); el.appendChild(du); box.appendChild(el);
       });
       card.appendChild(box); week.appendChild(card);
+      if(d===jsDay) renderNow(res.plan[d],nowMin);
     }
 
     var sp=Math.round(res.studyPlanned*10)/10;
@@ -365,6 +391,22 @@
     });
     renderStreak();
   }
+
+  function renderNow(plan,nowMin){
+    var strip=document.getElementById("nowStrip");
+    var cur=null,nxt=null;
+    plan.forEach(function(b){
+      if(nowMin>=b.a&&nowMin<b.b) cur=b;
+      if(b.a>nowMin&&(!nxt||b.a<nxt.a)) nxt=b;
+    });
+    if(!cur&&!nxt){ strip.hidden=true; return; }
+    strip.hidden=false;
+    document.getElementById("nowWhat").textContent=
+      cur?cur.name+" — until "+toT(cur.b):"Free — breathe";
+    document.getElementById("nowNext").textContent=
+      nxt?("Next: "+nxt.name+" at "+toT(nxt.a)):"Nothing else today";
+  }
+  setInterval(function(){ render(); },60000);
 
   function renderStreak(){
     var st=state.streak, today=todayStr();
