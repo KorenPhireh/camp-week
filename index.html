@@ -200,6 +200,10 @@
           aria-label="Message the coach">
         <button class="btn-accent" id="chatSend">Send</button>
       </div>
+      <div class="chat-row" style="margin-top:8px;">
+        <input type="file" id="shiftPhoto" accept="image/*" hidden>
+        <button id="photoBtn">Read my work schedule from a photo</button>
+      </div>
     </section>
   </div>
 
@@ -518,6 +522,68 @@
   }
   document.getElementById("chatSend").addEventListener("click",sendChat);
   chatIn.addEventListener("keydown",function(e){ if(e.key==="Enter") sendChat(); });
+
+  // read work shifts out of a schedule screenshot with on-device OCR (tesseract.js)
+  function toMinAmPm(h,m,ap){
+    h=+h; m=+(m||0);
+    if(ap&&ap.charAt(0)==="p"&&h<12) h+=12;
+    if(ap&&ap.charAt(0)==="a"&&h===12) h=0;
+    return h*60+m;
+  }
+  function parseScheduleText(txt){
+    var found=[], curDay=null;
+    txt.split(/\n+/).forEach(function(line){
+      var l=line.toLowerCase();
+      var dm=l.match(DAYPAT);
+      if(dm) curDay={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6}[dm[1].slice(0,3)];
+      var rm=l.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?\s*(?:-|–|—|to)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?/);
+      if(rm&&curDay!==null){
+        var st=toMinAmPm(rm[1],rm[2],rm[3]), en=toMinAmPm(rm[4],rm[5],rm[6]);
+        if(en<=st&&en<720) en+=720;
+        var len=en-st;
+        if(len>=120&&len<=960&&st<1440&&en<1440){
+          found.push({day:curDay,start:st,end:en}); curDay=null;
+        }
+      }
+    });
+    return found;
+  }
+  var ocrLib=null;
+  function loadOcr(){
+    if(ocrLib) return ocrLib;
+    ocrLib=new Promise(function(res,rej){
+      var sc=document.createElement("script");
+      sc.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+      sc.onload=function(){ res(window.Tesseract); };
+      sc.onerror=function(){ ocrLib=null; rej(new Error("offline")); };
+      document.head.appendChild(sc);
+    });
+    return ocrLib;
+  }
+  var photoIn=document.getElementById("shiftPhoto");
+  document.getElementById("photoBtn").addEventListener("click",function(){ photoIn.click(); });
+  photoIn.addEventListener("change",function(){
+    var f=photoIn.files[0]; photoIn.value="";
+    if(!f) return;
+    say("Reading your schedule photo… first time takes a moment while the reader downloads.","bot");
+    loadOcr().then(function(T){ return T.recognize(f,"eng"); }).then(function(r){
+      var found=parseScheduleText(r.data.text||"");
+      var fresh=found.filter(function(n){
+        return !state.shifts.some(function(sh){ return sh.day===n.day&&sh.start===n.start&&sh.end===n.end; });
+      });
+      if(!fresh.length){
+        say("I couldn't find day + time pairs in that photo. Try a tighter, sharper crop of the schedule — or just tell me, e.g. “work monday 9 to 17”.","bot");
+        return;
+      }
+      fresh.forEach(function(n){ state.shifts.push(n); });
+      save(); render();
+      say("Found "+fresh.length+" shift(s):\n"+fresh.map(function(n){
+        return "• "+DAYS[n.day]+" "+toT(n.start)+"–"+toT(n.end);
+      }).join("\n")+"\nWrong one? Say “remove shifts <day>” and tell me the right times.","bot");
+    }).catch(function(){
+      say("I need an internet connection the first time I read a photo. Check your connection and try again — or type the shifts instead.","bot");
+    });
+  });
   say("I'm your coach. Tell me about your week in plain words and I'll rebuild the plan.\n"+HELP,"bot");
 
   render();
