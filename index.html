@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Camp Week — Train · Work · Study</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#C73B2D">
@@ -93,6 +94,17 @@
   .check input{accent-color:var(--accent);width:16px;height:16px;}
   .setrow{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:14px;margin-bottom:6px;}
 
+  .panel.wide{grid-column:1/-1;}
+  .chat{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;
+    padding:4px 2px;margin-bottom:10px;}
+  .msg{max-width:85%;padding:8px 12px;border-radius:10px;font-size:14px;line-height:1.4;
+    white-space:pre-line;}
+  .msg.bot{align-self:flex-start;background:var(--c-rest-bg);border-left:3px solid var(--accent);
+    border-radius:2px 10px 10px 10px;}
+  .msg.me{align-self:flex-end;background:var(--c-stu-bg);border-radius:10px 2px 10px 10px;}
+  .chat-row{display:flex;gap:8px;}
+  .chat-row input{flex:1;min-width:0;}
+
   .media h2{color:var(--accent);}
   .media .streak-big{font-size:34px;font-weight:700;font-family:Bahnschrift,"Arial Narrow",sans-serif;
     font-variant-numeric:tabular-nums;}
@@ -179,6 +191,16 @@
       <p>One check-in per day. Miss a day and the streak resets — the schedule below leaves no dead time to scroll in.</p>
       <button class="btn-accent" id="mediaBtn">I stayed off media today</button>
     </section>
+
+    <section class="panel wide">
+      <h2 class="display">Coach — tell me what to change</h2>
+      <div class="chat" id="chatLog" aria-live="polite"></div>
+      <div class="chat-row">
+        <input type="text" id="chatIn" placeholder='Try: "work monday 9 to 17" or "study 25 hours" or "no running"'
+          aria-label="Message the coach">
+        <button class="btn-accent" id="chatSend">Send</button>
+      </div>
+    </section>
   </div>
 
   <div class="legend" id="legend"></div>
@@ -204,6 +226,7 @@
   }
   var state=load();
   state.shifts = state.shifts||[];            // {day,start,end} minutes
+  state.custom = state.custom||[];            // {day,start,dur,name} extra sessions added via coach
   state.settings = state.settings||{wake:420,sleep:1410,target:20,gym:true,run:true,rope:true};
   state.streak = state.streak||{count:0,last:null}; // last = "YYYY-MM-DD"
 
@@ -258,6 +281,11 @@
     [[0,1260,1350],[2,1200,1260]].forEach(function(mt){
       add(mt[0],mt[1],mt[2],"Muay thai","mt");
       carve(mt[0],mt[1]-30,mt[2]+15);
+    });
+    // custom sessions added via the coach
+    state.custom.forEach(function(c){
+      add(c.day,c.start,c.start+c.dur,c.name,"str");
+      carve(c.day,c.start-15,c.start+c.dur+15);
     });
     // meals
     for(var d2=0;d2<7;d2++){
@@ -385,6 +413,112 @@
     var i=document.createElement("i"); i.style.background="var(--c-"+(c[0]==="mt"?"mt":c[0])+")";
     sp.appendChild(i); sp.appendChild(document.createTextNode(c[1])); lg.appendChild(sp);
   });
+
+  /* ---------- coach (built-in assistant) ---------- */
+  var chatLog=document.getElementById("chatLog");
+  var chatIn=document.getElementById("chatIn");
+  var HELP="I can rebuild your week from plain words. Try:\n"+
+    "• work monday 9 to 17 — add a shift\n"+
+    "• remove shifts monday — or “remove all shifts”\n"+
+    "• wake at 8 / sleep at 23:00\n"+
+    "• study 25 hours — change the weekly target\n"+
+    "• no running / add gym / no rope\n"+
+    "• add swimming friday at 18:00 for 45 min\n"+
+    "• remove swimming — drop a custom session\n"+
+    "• reset everything";
+  function say(txt,who){
+    var m=document.createElement("div"); m.className="msg "+who; m.textContent=txt;
+    chatLog.appendChild(m); chatLog.scrollTop=chatLog.scrollHeight;
+  }
+  var DAYPAT=/\b(sun(?:day)?|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:r|rs|rsday)?|fri(?:day)?|sat(?:urday)?)\b/;
+  function findDay(t){
+    var m=t.match(DAYPAT); if(!m) return null;
+    return {sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6}[m[1].slice(0,3)];
+  }
+  function findTimes(t){
+    var out=[], re=/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/g, m;
+    while((m=re.exec(t))){
+      var h=+m[1], mm=+(m[2]||0);
+      if(m[3]==="pm"&&h<12) h+=12;
+      if(m[3]==="am"&&h===12) h=0;
+      if(h<=24&&mm<60) out.push(h*60+mm);
+    }
+    return out;
+  }
+  function coach(raw){
+    var t=raw.toLowerCase().trim(), s=state.settings;
+    if(!t) return null;
+    if(/help|what can/.test(t)) return HELP;
+    if(/reset (everything|all)/.test(t)){
+      state.shifts=[]; state.custom=[];
+      state.settings={wake:420,sleep:1410,target:20,gym:true,run:true,rope:true};
+      return "Fresh start — shifts and custom sessions cleared, settings back to default.";
+    }
+    var day=findDay(t), times=findTimes(t.replace(/\b\d+\s*(h|hours?|min|minutes?)\b/g,""));
+    // shifts
+    if(/(remove|delete|clear|cancel)\b.*\b(shifts?|work)/.test(t)){
+      var before=state.shifts.length;
+      state.shifts=day===null?[]:state.shifts.filter(function(sh){return sh.day!==day;});
+      return (before-state.shifts.length)+" shift(s) removed. The week rebuilt itself.";
+    }
+    if(/\b(work|shift)\b/.test(t)&&day!==null&&times.length>=2){
+      var a=times[0],b=times[1];
+      if(b<=a&&b<720) b+=720;      // "9 to 5" means 17:00
+      if(b<=a) return "That shift ends before it starts — give me start and end like “work monday 9 to 17”.";
+      state.shifts.push({day:day,start:a,end:b});
+      return "Shift added: "+DAYS[day]+" "+toT(a)+"–"+toT(b)+". Training and study moved around it.";
+    }
+    // day rhythm
+    if(/\bwake\b/.test(t)&&times.length){ s.wake=times[0];
+      return "Wake-up set to "+toT(s.wake)+". Mornings replanned."; }
+    if(/\b(sleep|bed|lights)\b/.test(t)&&times.length){
+      var sl=times[0];
+      if(sl<900) sl+=720;                 // "sleep at 11" means 23:00
+      s.sleep=Math.min(sl,1439);
+      return "Lights out at "+toT(s.sleep)+". Evenings replanned."; }
+    // study target
+    if(/\bstudy\b/.test(t)){
+      var n=t.match(/(\d+(?:\.\d+)?)\s*h/)||t.match(/\b(\d+)\b/);
+      if(n){ s.target=Math.max(1,Math.min(60,+n[1]));
+        return "Study target is now "+s.target+" h/week. Blocks redistributed."; }
+    }
+    // toggles
+    var off=/\b(no|stop|remove|skip|drop|cancel)\b/.test(t), on=/\b(add|start|include|bring back|more)\b/.test(t);
+    if(/\brun/.test(t)&&(off||on)){ s.run=!off;
+      return off?"Running dropped from the plan.":"Running is back — Wed & Fri mornings."; }
+    if(/\bgym|strength|weights?\b/.test(t)&&(off||on)&&!/\badd .+ (at|on)\b/.test(t)){ s.gym=!off;
+      return off?"Gym sessions dropped.":"Gym is on — Mon, Thu & Sat."; }
+    if(/\brope|jump/.test(t)&&(off||on)){ s.rope=!off;
+      return off?"Rope jumping dropped.":"Rope jumping is back — 15 min every morning."; }
+    // custom sessions
+    var rm=t.match(/^(?:remove|delete|cancel|drop)\s+(.+)$/);
+    if(rm){
+      var name=rm[1].trim(), before2=state.custom.length;
+      state.custom=state.custom.filter(function(c){return c.name.toLowerCase().indexOf(name)===-1;});
+      if(state.custom.length<before2) return "“"+name+"” removed.";
+      return "I couldn't find “"+name+"”. "+HELP;
+    }
+    var addm=t.match(/^add\s+(.+?)(?:\s+(?:on\s+)?(sun\w*|mon\w*|tue\w*|wed\w*|thu\w*|fri\w*|sat\w*))?\s+at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)(?:\s+for\s+(\d+)\s*min)?$/);
+    if(addm){
+      var d2=addm[2]?findDay(addm[2]):day;
+      if(d2===null) return "Which day? e.g. “add swimming friday at 18:00 for 45 min”.";
+      var st2=findTimes(addm[3])[0], dur=addm[4]?+addm[4]:60;
+      var nm=addm[1].replace(DAYPAT,"").trim();
+      nm=nm.charAt(0).toUpperCase()+nm.slice(1);
+      state.custom.push({day:d2,start:st2,dur:dur,name:nm});
+      return nm+" added: "+DAYS[d2]+" "+toT(st2)+"–"+toT(st2+dur)+".";
+    }
+    return "I didn't catch that.\n"+HELP;
+  }
+  function sendChat(){
+    var v=chatIn.value.trim(); if(!v) return;
+    say(v,"me"); chatIn.value="";
+    var reply=coach(v);
+    if(reply){ save(); render(); say(reply,"bot"); }
+  }
+  document.getElementById("chatSend").addEventListener("click",sendChat);
+  chatIn.addEventListener("keydown",function(e){ if(e.key==="Enter") sendChat(); });
+  say("I'm your coach. Tell me about your week in plain words and I'll rebuild the plan.\n"+HELP,"bot");
 
   render();
 
