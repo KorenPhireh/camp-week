@@ -1,0 +1,397 @@
+<title>Camp Week — Train · Work · Study</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#C73B2D">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#F7F5F3; --card:#FFFFFF; --ink:#241F1C; --ink-soft:#6B615B; --line:#E4DED9;
+    --accent:#C73B2D; --accent-ink:#FFFFFF;
+    --c-work:#4E6E8E;   --c-work-bg:#EDF2F7;
+    --c-mt:#C73B2D;     --c-mt-bg:#FBEEEC;
+    --c-str:#A07422;    --c-str-bg:#F8F1E2;
+    --c-car:#2E7E6E;    --c-car-bg:#E7F3F0;
+    --c-stu:#5A54A8;    --c-stu-bg:#EEEDF8;
+    --c-rest:#8A817A;   --c-rest-bg:#F1EEEB;
+    --good:#2E7E4E; --shadow:0 1px 3px rgba(30,20,15,.08);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#191512; --card:#221D19; --ink:#F0EAE5; --ink-soft:#A89C93; --line:#38302A;
+      --accent:#E05545; --accent-ink:#1B1210;
+      --c-work:#8FB0CE;  --c-work-bg:#243240;
+      --c-mt:#F07A6C;    --c-mt-bg:#43241F;
+      --c-str:#D8AC55;   --c-str-bg:#3B301A;
+      --c-car:#6CC0AE;   --c-car-bg:#1E3833;
+      --c-stu:#A49EE8;   --c-stu-bg:#2B2947;
+      --c-rest:#9B918A;  --c-rest-bg:#2C2723;
+      --good:#6CC08E; --shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F5F3; --card:#FFFFFF; --ink:#241F1C; --ink-soft:#6B615B; --line:#E4DED9;
+    --accent:#C73B2D; --accent-ink:#FFFFFF;
+    --c-work:#4E6E8E; --c-work-bg:#EDF2F7; --c-mt:#C73B2D; --c-mt-bg:#FBEEEC;
+    --c-str:#A07422; --c-str-bg:#F8F1E2; --c-car:#2E7E6E; --c-car-bg:#E7F3F0;
+    --c-stu:#5A54A8; --c-stu-bg:#EEEDF8; --c-rest:#8A817A; --c-rest-bg:#F1EEEB;
+    --good:#2E7E4E; --shadow:0 1px 3px rgba(30,20,15,.08);
+  }
+  :root[data-theme="dark"]{
+    --bg:#191512; --card:#221D19; --ink:#F0EAE5; --ink-soft:#A89C93; --line:#38302A;
+    --accent:#E05545; --accent-ink:#1B1210;
+    --c-work:#8FB0CE; --c-work-bg:#243240; --c-mt:#F07A6C; --c-mt-bg:#43241F;
+    --c-str:#D8AC55; --c-str-bg:#3B301A; --c-car:#6CC0AE; --c-car-bg:#1E3833;
+    --c-stu:#A49EE8; --c-stu-bg:#2B2947; --c-rest:#9B918A; --c-rest-bg:#2C2723;
+    --good:#6CC08E; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Roboto,system-ui,sans-serif;font-size:15px;line-height:1.45;}
+  .display{font-family:Bahnschrift,"Arial Narrow","Roboto Condensed",sans-serif;
+    text-transform:uppercase;letter-spacing:.06em;}
+  .wrap{max-width:1080px;margin:0 auto;padding:16px 14px 60px;}
+  header.top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    border-bottom:3px solid var(--accent);padding:10px 0 12px;margin-bottom:16px;}
+  header.top h1{margin:0;font-size:clamp(24px,5vw,34px);font-weight:700;}
+  header.top h1 span{color:var(--accent);}
+  header.top .sub{color:var(--ink-soft);font-size:13px;letter-spacing:.04em;}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px;}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:6px;
+    padding:10px 14px;box-shadow:var(--shadow);}
+  .stat .label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);}
+  .stat .val{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;
+    font-family:Bahnschrift,"Arial Narrow",sans-serif;}
+  .stat .val small{font-size:14px;color:var(--ink-soft);font-weight:400;}
+  .stat.streak .val{color:var(--accent);}
+  .bar{height:5px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--c-stu);border-radius:3px;transition:width .3s;}
+
+  .panels{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:20px;}
+  @media(min-width:820px){.panels{grid-template-columns:1.2fr 1fr 1fr;}}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:6px;
+    padding:14px;box-shadow:var(--shadow);}
+  .panel h2{margin:0 0 10px;font-size:14px;letter-spacing:.08em;}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+  select,input[type=time],input[type=number],button{
+    font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);
+    border-radius:4px;padding:6px 8px;}
+  input[type=time]{font-variant-numeric:tabular-nums;}
+  button{cursor:pointer;}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .btn-accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;}
+  .btn-accent:disabled{opacity:.55;cursor:default;}
+  .shift-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;}
+  .shift-list li{display:flex;align-items:center;gap:8px;background:var(--c-work-bg);
+    border-left:4px solid var(--c-work);border-radius:4px;padding:6px 10px;font-variant-numeric:tabular-nums;}
+  .shift-list li .d{font-weight:600;min-width:34px;}
+  .shift-list li button{margin-left:auto;background:none;border:none;color:var(--ink-soft);font-size:16px;padding:2px 6px;}
+  .shift-list li button:hover{color:var(--accent);}
+  .hint{font-size:12.5px;color:var(--ink-soft);margin:6px 0 0;}
+  .check{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:14px;}
+  .check input{accent-color:var(--accent);width:16px;height:16px;}
+  .setrow{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:14px;margin-bottom:6px;}
+
+  .media h2{color:var(--accent);}
+  .media .streak-big{font-size:34px;font-weight:700;font-family:Bahnschrift,"Arial Narrow",sans-serif;
+    font-variant-numeric:tabular-nums;}
+  .media p{margin:6px 0 10px;font-size:13.5px;color:var(--ink-soft);}
+
+  .week{display:grid;grid-template-columns:1fr;gap:12px;}
+  @media(min-width:640px){.week{grid-template-columns:repeat(2,1fr);}}
+  @media(min-width:980px){.week{grid-template-columns:repeat(4,1fr);}
+    .week .day:nth-child(n+5){grid-column:span 1;} }
+  .day{background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:var(--shadow);
+    display:flex;flex-direction:column;overflow:hidden;}
+  .day.today{border-color:var(--accent);}
+  .day h3{margin:0;padding:8px 12px;font-size:13px;letter-spacing:.1em;
+    border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .day.today h3{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+  .day h3 small{font-weight:400;letter-spacing:0;text-transform:none;opacity:.8;}
+  .blocks{padding:8px;display:flex;flex-direction:column;gap:5px;min-height:60px;}
+  .blk{border-radius:4px;padding:5px 9px;display:flex;gap:8px;align-items:baseline;
+    border-left:4px solid var(--bc,var(--c-rest));background:var(--bb,var(--c-rest-bg));font-size:13.5px;}
+  .blk .t{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:12px;white-space:nowrap;}
+  .blk .n{font-weight:600;}
+  .blk.work{--bc:var(--c-work);--bb:var(--c-work-bg);}
+  .blk.mt{--bc:var(--c-mt);--bb:var(--c-mt-bg);}
+  .blk.str{--bc:var(--c-str);--bb:var(--c-str-bg);}
+  .blk.car{--bc:var(--c-car);--bb:var(--c-car-bg);}
+  .blk.stu{--bc:var(--c-stu);--bb:var(--c-stu-bg);}
+  .blk.rest{--bc:var(--c-rest);--bb:var(--c-rest-bg);}
+  .empty-day{color:var(--ink-soft);font-size:13px;padding:6px 9px;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:16px 0 8px;font-size:12.5px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="display">Camp<span>Week</span></h1>
+    <div class="sub display">Train &middot; Work &middot; Study &middot; No Media</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Study planned</div>
+      <div class="val" id="stStudy">0<small> / 20 h</small></div>
+      <div class="bar"><i id="stStudyBar" style="width:0%"></i></div></div>
+    <div class="stat"><div class="label">Training sessions</div>
+      <div class="val" id="stTrain">0</div></div>
+    <div class="stat"><div class="label">Work hours</div>
+      <div class="val" id="stWork">0<small> h</small></div></div>
+    <div class="stat streak"><div class="label">Media-free streak</div>
+      <div class="val" id="stStreak">0<small> days</small></div></div>
+  </div>
+
+  <div class="panels">
+    <section class="panel">
+      <h2 class="display">Work shifts (Legion)</h2>
+      <div class="row">
+        <select id="shiftDay" aria-label="Day"></select>
+        <input type="time" id="shiftStart" value="09:00" aria-label="Shift start">
+        <span>–</span>
+        <input type="time" id="shiftEnd" value="17:00" aria-label="Shift end">
+        <button class="btn-accent" id="addShift">Add</button>
+      </div>
+      <ul class="shift-list" id="shiftList"></ul>
+      <p class="hint">Enter this week's shifts from your Legion app. They're saved on this device and the plan rebuilds around them.</p>
+    </section>
+
+    <section class="panel">
+      <h2 class="display">Settings</h2>
+      <div class="setrow">
+        <label for="wake">Wake up</label><input type="time" id="wake" value="07:00">
+        <label for="sleep">Lights out</label><input type="time" id="sleep" value="23:30">
+        <label for="target">Study target (h/wk)</label>
+        <input type="number" id="target" min="1" max="60" value="20" style="width:70px">
+      </div>
+      <label class="check"><input type="checkbox" id="optGym" checked> Gym / strength (Mon &middot; Thu &middot; Sat)</label>
+      <label class="check"><input type="checkbox" id="optRun" checked> Running (Wed &middot; Fri)</label>
+      <label class="check"><input type="checkbox" id="optRope" checked> Rope jumping (daily, 15 min)</label>
+      <p class="hint">Muay thai is fixed: Sun 21:00–22:30 and Tue 20:00–21:00.</p>
+    </section>
+
+    <section class="panel media">
+      <h2 class="display">Media-free streak</h2>
+      <div class="streak-big" id="streakBig">0 days</div>
+      <p>One check-in per day. Miss a day and the streak resets — the schedule below leaves no dead time to scroll in.</p>
+      <button class="btn-accent" id="mediaBtn">I stayed off media today</button>
+    </section>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <div class="week" id="week"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  var SHORT=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var KEY="campweek-v1";
+
+  // storage that degrades gracefully where localStorage is blocked (e.g. some mobile file viewers)
+  var mem={};
+  function load(){
+    try{ return JSON.parse(localStorage.getItem(KEY))||{}; }
+    catch(e){ return mem[KEY]||{}; }
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ mem[KEY]=state; }
+  }
+  var state=load();
+  state.shifts = state.shifts||[];            // {day,start,end} minutes
+  state.settings = state.settings||{wake:420,sleep:1410,target:20,gym:true,run:true,rope:true};
+  state.streak = state.streak||{count:0,last:null}; // last = "YYYY-MM-DD"
+
+  function toMin(t){ var p=t.split(":"); return (+p[0])*60+(+p[1]); }
+  function toT(m){ m=((m%1440)+1440)%1440;
+    return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }
+  function todayStr(){ var d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+
+  /* ---------- schedule engine ---------- */
+  function buildWeek(){
+    var s=state.settings;
+    var free=[], plan=[];
+    for(var d=0;d<7;d++){ free.push([[s.wake, s.sleep]]); plan.push([]); }
+
+    function carve(day,a,b){
+      var out=[];
+      free[day].forEach(function(iv){
+        if(b<=iv[0]||a>=iv[1]){ out.push(iv); return; }
+        if(iv[0]<a) out.push([iv[0],a]);
+        if(b<iv[1]) out.push([b,iv[1]]);
+      });
+      free[day]=out;
+    }
+    function add(day,a,b,name,cls){ plan[day].push({a:a,b:b,name:name,cls:cls}); }
+    // place duration inside preferred window; fall back to anywhere unless strict. Returns true if placed.
+    function place(day,dur,w0,w1,name,cls,pad,strict){
+      pad=pad||0;
+      var best=null;
+      free[day].forEach(function(iv){
+        var a=Math.max(iv[0],w0), b=Math.min(iv[1],w1);
+        if(b-a>=dur && (best===null||a<best)) best=a;
+      });
+      if(best===null && !strict){
+        free[day].forEach(function(iv){
+          if(iv[1]-iv[0]>=dur && (best===null||iv[0]<best)) best=iv[0];
+        });
+      }
+      if(best===null) return false;
+      add(day,best,best+dur,name,cls);
+      carve(day,best,best+dur+pad);
+      return true;
+    }
+
+    // work shifts (+30 min travel buffer each side)
+    state.shifts.forEach(function(sh){
+      add(sh.day,sh.start,sh.end,"Work shift","work");
+      carve(sh.day,sh.start-30,sh.end+30);
+    });
+    // fixed muay thai (+30 pre, +15 post buffer)
+    [[0,1260,1350],[2,1200,1260]].forEach(function(mt){
+      add(mt[0],mt[1],mt[2],"Muay thai","mt");
+      carve(mt[0],mt[1]-30,mt[2]+15);
+    });
+    // meals
+    for(var d2=0;d2<7;d2++){
+      place(d2,30,690,900,"Lunch","rest",0,true);
+      place(d2,45,1050,1260,"Dinner & reset","rest",0,true);
+    }
+    // training
+    if(s.rope) for(var d3=0;d3<7;d3++) place(d3,15,s.wake+15,s.wake+150,"Rope jumping","car");
+    if(s.gym) [1,4,6].forEach(function(d4){ place(d4,60,960,1260,"Gym — strength","str"); });
+    if(s.run) [3,5].forEach(function(d5){ place(d5,40,s.wake+30,720,"Run","car"); });
+
+    // study: 90-min blocks + 15-min break pad, round-robin, max 3/day
+    var need=s.target*60, perDay=[0,0,0,0,0,0,0], placedAny=true;
+    while(need>0 && placedAny){
+      placedAny=false;
+      for(var d6=0;d6<7 && need>0;d6++){
+        if(perDay[d6]>=3) continue;
+        var dur=Math.min(90,need);
+        if(dur<30) dur=30;
+        if(place(d6,dur,540,1320,"Study","stu",15)){ need-=dur; perDay[d6]++; placedAny=true; }
+      }
+    }
+    plan.forEach(function(list){ list.sort(function(x,y){ return x.a-y.a; }); });
+    return {plan:plan, studyPlanned:(s.target*60-Math.max(need,0))/60};
+  }
+
+  /* ---------- render ---------- */
+  var CATS=[["work","Work"],["mt","Muay thai"],["str","Strength"],["car","Cardio / rope"],["stu","Study"],["rest","Meals & reset"]];
+  function render(){
+    var res=buildWeek(), s=state.settings;
+    var week=document.getElementById("week"); week.innerHTML="";
+    var jsDay=new Date().getDay();
+    var train=0, workMin=0;
+    state.shifts.forEach(function(sh){ workMin+=sh.end-sh.start; });
+
+    for(var d=0;d<7;d++){
+      var card=document.createElement("section");
+      card.className="day"+(d===jsDay?" today":"");
+      var mins=0;
+      res.plan[d].forEach(function(b){ if(b.cls==="stu") mins+=b.b-b.a;
+        if(b.cls==="mt"||b.cls==="str"||b.cls==="car") train++; });
+      var h=document.createElement("h3"); h.className="display";
+      h.innerHTML=DAYS[d]+(d===jsDay?" <small>today</small>":"");
+      card.appendChild(h);
+      var box=document.createElement("div"); box.className="blocks";
+      if(res.plan[d].length===0){
+        box.innerHTML='<div class="empty-day">Free day — recover well.</div>';
+      }
+      res.plan[d].forEach(function(b){
+        var el=document.createElement("div"); el.className="blk "+b.cls;
+        var t=document.createElement("span"); t.className="t"; t.textContent=toT(b.a)+"–"+toT(b.b);
+        var n=document.createElement("span"); n.className="n"; n.textContent=b.name;
+        el.appendChild(t); el.appendChild(n); box.appendChild(el);
+      });
+      card.appendChild(box); week.appendChild(card);
+    }
+
+    var sp=Math.round(res.studyPlanned*10)/10;
+    document.getElementById("stStudy").innerHTML=sp+"<small> / "+s.target+" h</small>";
+    document.getElementById("stStudyBar").style.width=Math.min(100,sp/s.target*100)+"%";
+    document.getElementById("stTrain").textContent=train;
+    document.getElementById("stWork").innerHTML=(Math.round(workMin/6)/10)+"<small> h</small>";
+
+    var list=document.getElementById("shiftList"); list.innerHTML="";
+    state.shifts.slice().sort(function(a,b){return a.day-b.day||a.start-b.start;}).forEach(function(sh){
+      var li=document.createElement("li");
+      var idx=state.shifts.indexOf(sh);
+      li.innerHTML='<span class="d">'+SHORT[sh.day]+'</span><span>'+toT(sh.start)+"–"+toT(sh.end)+"</span>";
+      var del=document.createElement("button"); del.textContent="×";
+      del.setAttribute("aria-label","Remove shift");
+      del.addEventListener("click",function(){ state.shifts.splice(idx,1); save(); render(); });
+      li.appendChild(del); list.appendChild(li);
+    });
+    renderStreak();
+  }
+
+  function renderStreak(){
+    var st=state.streak, today=todayStr();
+    if(st.last && daysBetween(st.last,today)>1){ st.count=0; save(); }
+    var done = st.last===today;
+    document.getElementById("stStreak").innerHTML=st.count+"<small> days</small>";
+    document.getElementById("streakBig").textContent=st.count+(st.count===1?" day":" days");
+    var btn=document.getElementById("mediaBtn");
+    btn.disabled=done;
+    btn.textContent=done?"Checked in — see you tomorrow":"I stayed off media today";
+  }
+
+  /* ---------- wire up ---------- */
+  var daySel=document.getElementById("shiftDay");
+  DAYS.forEach(function(n,i){ var o=document.createElement("option"); o.value=i; o.textContent=n; daySel.appendChild(o); });
+  daySel.value=new Date().getDay();
+
+  document.getElementById("addShift").addEventListener("click",function(){
+    var a=toMin(document.getElementById("shiftStart").value);
+    var b=toMin(document.getElementById("shiftEnd").value);
+    if(b<=a){ alert("Shift end must be after start."); return; }
+    state.shifts.push({day:+daySel.value,start:a,end:b}); save(); render();
+  });
+
+  var s=state.settings;
+  document.getElementById("wake").value=toT(s.wake);
+  document.getElementById("sleep").value=toT(s.sleep);
+  document.getElementById("target").value=s.target;
+  document.getElementById("optGym").checked=s.gym;
+  document.getElementById("optRun").checked=s.run;
+  document.getElementById("optRope").checked=s.rope;
+  function bind(id,fn){ document.getElementById(id).addEventListener("change",function(e){ fn(e.target); save(); render(); }); }
+  bind("wake",function(el){ s.wake=toMin(el.value); });
+  bind("sleep",function(el){ s.sleep=toMin(el.value); });
+  bind("target",function(el){ s.target=Math.max(1,Math.min(60,+el.value||20)); });
+  bind("optGym",function(el){ s.gym=el.checked; });
+  bind("optRun",function(el){ s.run=el.checked; });
+  bind("optRope",function(el){ s.rope=el.checked; });
+
+  document.getElementById("mediaBtn").addEventListener("click",function(){
+    var today=todayStr(), st=state.streak;
+    if(st.last===today) return;
+    st.count=(st.last && daysBetween(st.last,today)===1)?st.count+1:1;
+    st.last=today; save(); renderStreak();
+  });
+
+  var lg=document.getElementById("legend");
+  CATS.forEach(function(c){
+    var sp=document.createElement("span");
+    var i=document.createElement("i"); i.style.background="var(--c-"+(c[0]==="mt"?"mt":c[0])+")";
+    sp.appendChild(i); sp.appendChild(document.createTextNode(c[1])); lg.appendChild(sp);
+  });
+
+  render();
+
+  // offline install support; silently skipped where service workers aren't allowed
+  try{
+    if("serviceWorker" in navigator && location.protocol!=="file:")
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+  }catch(e){}
+})();
+</script>
