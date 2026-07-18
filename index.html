@@ -721,7 +721,7 @@
       '{"op":"reset"}\n'+
       "Only include <actions> when the user wants a change. The app rebuilds the whole week automatically after your actions.";
   }
-  function isGeminiKey(){ return /^AIza/.test(state.aiKey); }
+  function isGeminiKey(){ return /^AIza|^AQ\./.test(state.aiKey); }
   function aiChat(text, typingEl){
     aiHist.push({role:"user",content:text});
     if(aiHist.length>16) aiHist=aiHist.slice(-16);
@@ -877,8 +877,8 @@
       say("AI brain disconnected — back to built-in commands.","bot"); return; }
     var k=aiKeyIn.value.trim().replace(/^["']+|["']+$/g,"");
     if(!k){ aiKeyIn.focus(); return; }
-    if(!/^AIza/.test(k)&&!/^sk-ant-/.test(k)){
-      say("That doesn't look like an API key. A free Google key starts with AIza (copy it with the copy button at aistudio.google.com/apikey), an Anthropic key starts with sk-ant-.","bot");
+    if(!/^AIza|^AQ\./.test(k)&&!/^sk-ant-/.test(k)){
+      say("That doesn't look like an API key. A free Google key starts with AIza or AQ. (use the Copy key button at aistudio.google.com/apikey), an Anthropic key starts with sk-ant-.","bot");
       return;
     }
     state.aiKey=k; aiKeyIn.value=""; save(); refreshAiUi();
