@@ -727,22 +727,48 @@
     if(aiHist.length>16) aiHist=aiHist.slice(-16);
     var req;
     if(isGeminiKey()){
-      req=fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
-        method:"POST",
-        headers:{"content-type":"application/json","x-goog-api-key":state.aiKey},
-        body:JSON.stringify({
-          systemInstruction:{parts:[{text:aiSystem()}]},
-          contents:aiHist.map(function(m){
-            return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]};
-          }),
-          generationConfig:{maxOutputTokens:600}
-        })
-      }).then(function(r){
-        if(!r.ok) return r.json().then(function(e){ throw new Error((e.error&&e.error.message)||("HTTP "+r.status)); });
-        return r.json();
-      }).then(function(data){
-        var c=data.candidates&&data.candidates[0];
-        return ((c&&c.content&&c.content.parts)||[]).map(function(p){return p.text||"";}).join("");
+      var gBody=JSON.stringify({
+        systemInstruction:{parts:[{text:aiSystem()}]},
+        contents:aiHist.map(function(m){
+          return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]};
+        }),
+        generationConfig:{maxOutputTokens:600}
+      });
+      var gCall=function(model){
+        return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
+          method:"POST",
+          headers:{"content-type":"application/json","x-goog-api-key":state.aiKey},
+          body:gBody
+        }).then(function(r){
+          if(!r.ok) return r.json().then(function(e){ throw new Error((e.error&&e.error.message)||("HTTP "+r.status)); });
+          return r.json();
+        }).then(function(data){
+          var c=data.candidates&&data.candidates[0];
+          return ((c&&c.content&&c.content.parts)||[]).map(function(p){return p.text||"";}).join("");
+        });
+      };
+      // ask Google which models this key can use; prefer the newest Flash
+      var gDiscover=function(){
+        return fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",{
+          headers:{"x-goog-api-key":state.aiKey}
+        }).then(function(r){ return r.json(); }).then(function(d){
+          var usable=(d.models||[]).filter(function(m){
+            return (m.supportedGenerationMethods||[]).indexOf("generateContent")>-1;
+          }).map(function(m){ return m.name.replace(/^models\//,""); });
+          var flash=usable.filter(function(n){
+            return /flash/i.test(n)&&!/lite|preview|exp|image|tts|live|8b|thinking|latest/i.test(n);
+          }).sort();
+          var pick=flash[flash.length-1]||usable.sort()[usable.length-1];
+          if(!pick) throw new Error("no usable Gemini model on this key");
+          return pick;
+        });
+      };
+      req=gCall(state.gemModel||"gemini-flash-latest").catch(function(err){
+        if(!/model/i.test(err.message)) throw err;
+        return gDiscover().then(function(pick){
+          state.gemModel=pick; save();
+          return gCall(pick);
+        });
       });
     }else{
       req=fetch("https://api.anthropic.com/v1/messages",{
