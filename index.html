@@ -247,11 +247,11 @@
         <button id="photoBtn">Read my work schedule from a photo</button>
       </div>
       <div class="chat-row" style="margin-top:8px;">
-        <input type="password" id="aiKey" placeholder="Paste Anthropic API key for a real AI brain (optional)"
-          aria-label="Anthropic API key" autocomplete="off">
+        <input type="password" id="aiKey" placeholder="Paste an AI key — free Google key works (optional)"
+          aria-label="AI API key" autocomplete="off">
         <button id="aiSave">Save</button>
       </div>
-      <p class="hint" id="aiHint">Without a key the coach understands fixed commands. With a key (get one at console.anthropic.com) it becomes a real AI that understands anything you say. The key stays on this device only.</p>
+      <p class="hint" id="aiHint">Without a key the coach understands fixed commands. With a key it becomes a real AI. Free option: aistudio.google.com/apikey (Google account, no card). Paid option: console.anthropic.com. The key stays on this device only.</p>
     </section>
   </div>
 
@@ -721,29 +721,53 @@
       '{"op":"reset"}\n'+
       "Only include <actions> when the user wants a change. The app rebuilds the whole week automatically after your actions.";
   }
+  function isGeminiKey(){ return /^AIza/.test(state.aiKey); }
   function aiChat(text, typingEl){
     aiHist.push({role:"user",content:text});
     if(aiHist.length>16) aiHist=aiHist.slice(-16);
-    return fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{
-        "content-type":"application/json",
-        "x-api-key":state.aiKey,
-        "anthropic-version":"2023-06-01",
-        "anthropic-dangerous-direct-browser-access":"true"
-      },
-      body:JSON.stringify({
-        model:"claude-haiku-4-5",
-        max_tokens:600,
-        system:aiSystem(),
-        messages:aiHist
-      })
-    }).then(function(r){
-      if(!r.ok) return r.json().then(function(e){ throw new Error((e.error&&e.error.message)||("HTTP "+r.status)); });
-      return r.json();
-    }).then(function(data){
-      var txt=(data.content||[]).filter(function(b){return b.type==="text";})
-        .map(function(b){return b.text;}).join("");
+    var req;
+    if(isGeminiKey()){
+      req=fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",{
+        method:"POST",
+        headers:{"content-type":"application/json","x-goog-api-key":state.aiKey},
+        body:JSON.stringify({
+          systemInstruction:{parts:[{text:aiSystem()}]},
+          contents:aiHist.map(function(m){
+            return {role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]};
+          }),
+          generationConfig:{maxOutputTokens:600}
+        })
+      }).then(function(r){
+        if(!r.ok) return r.json().then(function(e){ throw new Error((e.error&&e.error.message)||("HTTP "+r.status)); });
+        return r.json();
+      }).then(function(data){
+        var c=data.candidates&&data.candidates[0];
+        return ((c&&c.content&&c.content.parts)||[]).map(function(p){return p.text||"";}).join("");
+      });
+    }else{
+      req=fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{
+          "content-type":"application/json",
+          "x-api-key":state.aiKey,
+          "anthropic-version":"2023-06-01",
+          "anthropic-dangerous-direct-browser-access":"true"
+        },
+        body:JSON.stringify({
+          model:"claude-haiku-4-5",
+          max_tokens:600,
+          system:aiSystem(),
+          messages:aiHist
+        })
+      }).then(function(r){
+        if(!r.ok) return r.json().then(function(e){ throw new Error((e.error&&e.error.message)||("HTTP "+r.status)); });
+        return r.json();
+      }).then(function(data){
+        return (data.content||[]).filter(function(b){return b.type==="text";})
+          .map(function(b){return b.text;}).join("");
+      });
+    }
+    return req.then(function(txt){
       aiHist.push({role:"assistant",content:txt});
       var m=txt.match(/<actions>([\s\S]*?)<\/actions>/);
       var reply=txt.replace(/<actions>[\s\S]*?<\/actions>/g,"").trim();
@@ -840,11 +864,11 @@
   var aiKeyIn=document.getElementById("aiKey");
   function refreshAiUi(){
     if(state.aiKey){
-      aiKeyIn.placeholder="AI brain: connected";
+      aiKeyIn.placeholder="AI brain: connected"+(isGeminiKey()?" (Google, free)":" (Claude)");
       document.getElementById("aiSave").textContent="Remove";
       document.getElementById("aiHint").textContent="AI brain is on — the coach understands anything you say. Key stays on this device.";
     }else{
-      aiKeyIn.placeholder="Paste Anthropic API key for a real AI brain (optional)";
+      aiKeyIn.placeholder="Paste an AI key — free Google key works (optional)";
       document.getElementById("aiSave").textContent="Save";
     }
   }
