@@ -1,4 +1,4 @@
-var CACHE = "campweek-v11";
+var CACHE = "campweek-v12";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", function (e) {

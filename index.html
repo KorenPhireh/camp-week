@@ -215,7 +215,7 @@
         <label for="target">Study target (h/wk)</label>
         <input type="number" id="target" min="1" max="60" value="20" style="width:70px">
       </div>
-      <label class="check"><input type="checkbox" id="optGym" checked> Gym / strength (Mon &middot; Thu &middot; Sat)</label>
+      <label class="check"><input type="checkbox" id="optGym" checked> Gym — upper Mon 2h30 &middot; lower Thu 1h30</label>
       <label class="check"><input type="checkbox" id="optRun" checked> Running (Wed &middot; Fri)</label>
       <label class="check"><input type="checkbox" id="optRope" checked> Rope jumping (daily, 15 min)</label>
       <label class="check"><input type="checkbox" id="optMT" checked> <span id="mtLabel">Muay thai</span></label>
@@ -350,7 +350,10 @@
     }
     // training
     if(s.rope) for(var d3=0;d3<7;d3++) place(d3,15,s.wake+15,s.wake+150,"Rope jumping","car");
-    if(s.gym) [1,4,6].forEach(function(d4){ place(d4,60,960,1260,"Gym — strength","str"); });
+    if(s.gym){
+      place(1,150,900,1320,"Gym — upper body","str");
+      place(4,90,900,1320,"Gym — lower body","str");
+    }
     if(s.run) [3,5].forEach(function(d5){ place(d5,40,s.wake+30,720,"Run","car"); });
 
     // study: 90-min blocks + 15-min break pad, round-robin, max 3/day
@@ -646,7 +649,7 @@
     if(/\brun/.test(t)&&(off||on)){ s.run=!off;
       return off?"Running dropped from the plan.":"Running is back — Wed & Fri mornings."; }
     if(/\bgym|strength|weights?\b/.test(t)&&(off||on)&&!/\badd .+ (at|on)\b/.test(t)){ s.gym=!off;
-      return off?"Gym sessions dropped.":"Gym is on — Mon, Thu & Sat."; }
+      return off?"Gym sessions dropped.":"Gym is on — upper Monday, lower Thursday."; }
     if(/\brope|jump/.test(t)&&(off||on)){ s.rope=!off;
       return off?"Rope jumping dropped.":"Rope jumping is back — 15 min every morning."; }
     // custom sessions
@@ -710,7 +713,8 @@
       "Today is "+DAYS[new Date().getDay()]+", the time is "+toT(new Date().getHours()*60+new Date().getMinutes())+".\n"+
       "Current app state (times are minutes from midnight, day 0=Sunday..6=Saturday):\n"+
       JSON.stringify(st)+"\n"+
-      "To change the schedule, append to your reply a single JSON object wrapped in <actions></actions> tags: "+
+      "To change the schedule, append to your reply a single JSON object wrapped in <actions></actions> tags "+
+      "(raw JSON only — never use markdown code fences): "+
       '{"actions":[...]} using these ops:\n'+
       '{"op":"add_shift","day":0-6,"start":min,"end":min}\n'+
       '{"op":"remove_shifts","day":0-6 or omit for all}\n'+
@@ -797,9 +801,19 @@
       aiHist.push({role:"assistant",content:txt});
       var m=txt.match(/<actions>([\s\S]*?)<\/actions>/);
       var reply=txt.replace(/<actions>[\s\S]*?<\/actions>/g,"").trim();
-      if(m){
+      var raw=m?m[1]:null;
+      if(!raw){
+        // some models put the JSON in a markdown code fence instead of the tags
+        var f=txt.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if(f&&f[1].indexOf('"op"')>-1){
+          raw=f[1];
+          reply=txt.replace(/```(?:json)?[\s\S]*?```/g,"").trim();
+        }
+      }
+      if(raw){
+        raw=raw.replace(/```(?:json)?/g,"").trim();
         try{
-          var parsed=JSON.parse(m[1]);
+          var parsed=JSON.parse(raw);
           if(applyActions(parsed.actions||parsed)>0){ save(); render(); }
         }catch(e){}
       }
